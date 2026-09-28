@@ -1,0 +1,287 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Translator App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #dfe9f3, #ffffff);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 30px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      margin-bottom: 30px;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+    }
+
+    h1 {
+      text-align: center;
+      color: #0a3d62;
+      margin-bottom: 40px;
+      font-size: 28px;
+    }
+
+    .card h2 {
+      color: #0984e3;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid #dcdde1;
+      font-size: 15px;
+      margin-bottom: 15px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #74b9ff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #0984e3;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background: #0652dd;
+    }
+
+    .switch-link {
+      text-align: center;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .switch-link a {
+      color: #0984e3;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .switch-link a:hover {
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #result, #user_details {
+      margin-top: 15px;
+      font-size: 15px;
+      color: #2d3436;
+    }
+
+    .success {
+      color: #2ecc71;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .error {
+      color: #e74c3c;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    @media screen and (max-width: 600px) {
+      .container {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🌐 Translator App</h1>
+
+  <!-- Login Form -->
+  <div class="card" id="login_form">
+    <h2>Login</h2>
+    <input id="login_email" placeholder="Email" type="email">
+    <input id="login_password" placeholder="Password" type="password">
+    <button onclick="login()">Login</button>
+    <div class="switch-link">
+      Don't have an account? <a onclick="showRegister()">Register here</a>
+    </div>
+    <div id="login_status"></div>
+  </div>
+
+  <!-- Register Form -->
+  <div class="card hidden" id="register_form">
+    <h2>Register</h2>
+    <input id="reg_email" placeholder="Email" type="email">
+    <input id="reg_password" placeholder="Password" type="password">
+    <input id="reg_mobile" placeholder="Mobile" type="text">
+    <button onclick="register()">Register</button>
+    <div class="switch-link">
+      Already have an account? <a onclick="showLogin()">Login here</a>
+    </div>
+    <div id="register_status"></div>
+  </div>
+
+  <!-- User Info -->
+  <div class="card hidden" id="user_card">
+    <h2>User Info</h2>
+    <button onclick="getUser()">Get My Details</button>
+    <div id="user_details"></div>
+  </div>
+
+  <!-- Translate -->
+  <div class="card hidden" id="translate_card">
+    <h2>Translate Text</h2>
+    <textarea id="input_text" placeholder="Enter text to translate..."></textarea>
+    <input id="source_lang" placeholder="Source language (default: en)">
+    <input id="target_lang" placeholder="Target language (default: es)">
+    <button onclick="doTranslate()">Translate</button>
+    <div id="result"></div>
+  </div>
+</div>
+
+<script>
+  let token = null;
+
+  function showRegister() {
+    document.getElementById('login_form').classList.add('hidden');
+    document.getElementById('register_form').classList.remove('hidden');
+  }
+
+  function showLogin() {
+    document.getElementById('register_form').classList.add('hidden');
+    document.getElementById('login_form').classList.remove('hidden');
+  }
+
+  function showApp() {
+    document.getElementById('login_form').classList.add('hidden');
+    document.getElementById('register_form').classList.add('hidden');
+    document.getElementById('user_card').classList.remove('hidden');
+    document.getElementById('translate_card').classList.remove('hidden');
+  }
+
+  function register() {
+    document.getElementById('register_status').innerText = '';
+    fetch('/api/users/register/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('reg_email').value,
+        password: document.getElementById('reg_password').value,
+        mobile: document.getElementById('reg_mobile').value,
+      })
+    })
+    .then(res => res.ok ? res.json() : res.json().then(err => { throw err; }))
+    .then(() => {
+      document.getElementById('register_status').innerHTML = `<div class="success">✅ Registered successfully! You can now log in.</div>`;
+    })
+    .catch(err => {
+      document.getElementById('register_status').innerHTML = `<div class="error">❌ ${err?.error || 'Registration failed'}</div>`;
+    });
+  }
+
+  function login() {
+    document.getElementById('login_status').innerText = '';
+    fetch('/api/users/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('login_email').value,
+        password: document.getElementById('login_password').value
+      })
+    })
+    .then(res => res.ok ? res.json() : res.json().then(err => { throw err; }))
+    .then(data => {
+      token = data.token;
+      document.getElementById('login_status').innerHTML = `<div class="success">✅ Login successful!</div>`;
+      showApp();
+    })
+    .catch(err => {
+      document.getElementById('login_status').innerHTML = `<div class="error">❌ ${err?.error || 'Login failed'}</div>`;
+    });
+  }
+
+  function getUser() {
+    if (!token) return alert("Please login first.");
+
+    fetch('/api/users/detail/', {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('user_details').innerText = `Email: ${data.email}, Mobile: ${data.mobile}`;
+    })
+    .catch(err => alert("❌ Error: " + err));
+  }
+
+  function doTranslate() {
+    if (!token) return alert("Please login first.");
+
+    fetch('/api/translate/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        text: document.getElementById('input_text').value,
+        source_lang: document.getElementById('source_lang').value || 'en',
+        target_lang: document.getElementById('target_lang').value || 'es'
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.translated) {
+        document.getElementById('result').innerText = `✅ ${data.translated}`;
+      } else {
+        document.getElementById('result').innerText = `❌ ${data.error || 'Translation failed'}`;
+      }
+    })
+    .catch(err => alert("❌ Error: " + err));
+  }
+</script>
+</body>
+</html>
